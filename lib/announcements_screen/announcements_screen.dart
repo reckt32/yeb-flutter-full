@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import './widgets.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:cog_proh/models/token_manager.dart';
 
 TextStyle textFont = GoogleFonts.poppins();
 Color primaryColor = const Color.fromRGBO(1, 0, 91, 1);
@@ -45,6 +46,7 @@ class _AnnouncementsState extends State<Announcements> {
   }
 
   Future<void> fetchUserData() async {
+    final token= await TokenManager.getAccessToken();
     final apiUrl =
         'http://10.0.2.2:8000/users/user-info/'; // Replace with your actual API URL
     try {
@@ -52,7 +54,7 @@ class _AnnouncementsState extends State<Announcements> {
         Uri.parse(apiUrl),
         headers: <String, String>{
           'Authorization':
-          'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzU1OTExMDI3LCJpYXQiOjE3MTk5MTEwMjcsImp0aSI6ImFkYTE2ZGE3NDZkYTQ4M2I4NTJiNGRjODdiYzJlMGIyIiwidXNlcl9pZCI6Mn0.G86CMYcQJyK88CyoVALqGFyfiimaQF7E4e_ltAsQayI',
+          'Bearer $token',
         },
       );
       if (response.statusCode == 200) {

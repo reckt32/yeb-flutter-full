@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'models/token_manager.dart';
 import 'test1.dart';
 import 'test2.dart';
 import 'test3.dart';
@@ -40,6 +41,7 @@ class _GDScreenState extends State<GDScreen> {
   }
 
   Future<void> fetchUserData() async {
+    final token= await TokenManager.getAccessToken();
     final apiUrl =
         'http://10.0.2.2:8000/users/user-info/'; // Replace with your actual API URL
     try {
@@ -47,7 +49,7 @@ class _GDScreenState extends State<GDScreen> {
         Uri.parse(apiUrl),
         headers: <String, String>{
           'Authorization':
-          'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzU1OTExMDI3LCJpYXQiOjE3MTk5MTEwMjcsImp0aSI6ImFkYTE2ZGE3NDZkYTQ4M2I4NTJiNGRjODdiYzJlMGIyIiwidXNlcl9pZCI6Mn0.G86CMYcQJyK88CyoVALqGFyfiimaQF7E4e_ltAsQayI',
+          'Bearer $token',
         },
       );
       if (response.statusCode == 200) {
@@ -65,13 +67,14 @@ class _GDScreenState extends State<GDScreen> {
   }
 
   Future<void> sendPostRequest() async {
+    final token= await TokenManager.getAccessToken();
     final url = Uri.parse('http://10.0.2.2:8000/events/updated-gd-status/');
     final response = await http.post(
       url,
       headers: {
         'Content-Type': 'application/json',
         'Authorization':
-        'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzU1OTExMDI3LCJpYXQiOjE3MTk5MTEwMjcsImp0aSI6ImFkYTE2ZGE3NDZkYTQ4M2I4NTJiNGRjODdiYzJlMGIyIiwidXNlcl9pZCI6Mn0.G86CMYcQJyK88CyoVALqGFyfiimaQF7E4e_ltAsQayI',
+        'Bearer $token',
       },
       body: json.encode({'key': 'value'}),
     );

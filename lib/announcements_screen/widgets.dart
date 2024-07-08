@@ -11,6 +11,7 @@ import 'package:cog_proh/Devik/CompleteProfile.dart';
 import 'package:cog_proh/Devik/more.dart';
 import 'package:cog_proh/Tanay/U5.dart';
 import 'package:cog_proh/Tanay/U6.dart';
+import 'package:cog_proh/login/l8.dart';
 
 TextStyle textFont = GoogleFonts.poppins();
 Color primaryColor = const Color.fromRGBO(1, 0, 91, 1);

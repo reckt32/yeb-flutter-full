@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
+import '../models/token_manager.dart';
+
 Color primaryColor = const Color.fromRGBO(1, 0, 91, 1);
 class FeedbackScreen extends StatefulWidget {
   const FeedbackScreen({super.key});
@@ -15,20 +17,24 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
   List<dynamic> sessions = [];
   String? selectedSessionId;
   final TextEditingController feedbackController = TextEditingController();
+  var token;
 
   @override
   void initState() {
     super.initState();
     fetchSessions();
     fetchUserData();
+    TokenManager.getAccessToken().then((value) => <void>{
+      setState(() {
+        token = value;
+      })
+    });
   }
   String userId='';
   String username='';
 
   Future<void> fetchSessions() async {
     final url = Uri.parse('http://127.0.0.1:8000/events/list_sessions/');
-    const token =
-        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzU2MTAxODgxLCJpYXQiOjE3MjAxMDE4ODEsImp0aSI6IjY2OWM1ZjYxZjE3ZDQxMmZiNmMzMjliMDg3MzA5YmFmIiwidXNlcl9pZCI6MTJ9.r7kCTXM81VkGtJqErSCNQh20ZMVBx35MeWPq75NhNcg'; // Replace with your actual token
 
     final response = await http.get(
       url,
@@ -50,10 +56,10 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
   }
 
   Future<void> fetchUserData() async {
-    final apiUrl = 'http://127.0.0.1:8000/users/user-info/'; // Agar tum chrome mai chala rahe ho toh ttp://127.0.0.1:8000/users/user-info/ use karna agar android emulator mai chalana hai to 10.0.2.2 kardo
+    final apiUrl = 'http://10.0.0.2:8000/users/user-info/'; // Agar tum chrome mai chala rahe ho toh ttp://127.0.0.1:8000/users/user-info/ use karna agar android emulator mai chalana hai to 10.0.2.2 kardo
     try {
       final response = await http.get(Uri.parse(apiUrl),headers: <String, String>{
-        'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzU2MTAxODgxLCJpYXQiOjE3MjAxMDE4ODEsImp0aSI6IjY2OWM1ZjYxZjE3ZDQxMmZiNmMzMjliMDg3MzA5YmFmIiwidXNlcl9pZCI6MTJ9.r7kCTXM81VkGtJqErSCNQh20ZMVBx35MeWPq75NhNcg',
+        'Authorization': 'Bearer $token',
       },
       );
       if (response.statusCode == 200) {

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'a11.dart';
 import 'dart:convert';
+import 'models/token_manager.dart';
 import 'test3.dart';
 import 'announcements_screen/widgets.dart';
 import 'gd_deny.dart';
@@ -19,14 +20,15 @@ class _GDExtState extends State<GDExt> {
   String? userId = '';
   String? username = '';
   Future<bool> sendPostRequest(String reason) async {
+    final token= await TokenManager.getAccessToken();
     final url = Uri.parse('http://10.0.2.2:8000/events/gd_request/');
     final headers = {'Content-Type': 'application/json',
       'Authorization':
-      'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzU1OTExMDI3LCJpYXQiOjE3MTk5MTEwMjcsImp0aSI6ImFkYTE2ZGE3NDZkYTQ4M2I4NTJiNGRjODdiYzJlMGIyIiwidXNlcl9pZCI6Mn0.G86CMYcQJyK88CyoVALqGFyfiimaQF7E4e_ltAsQayI',
+      'Bearer $token',
     };
     final body = json.encode({
       'reason': reason,
-      'gd_static_id': '8e22f4b6-28e1-4d6a-a755-40b77594ebc1',
+      'gd_static_id': '8e22f4b6-28e1-4d6a-a755-40b77594ebc1',//idhar gd ka id kaha se fetch kare?
       'type': 'not_coming',
     });
     try {
@@ -46,6 +48,7 @@ class _GDExtState extends State<GDExt> {
   }
 
   Future<void> fetchUserData() async {
+    final token= await TokenManager.getAccessToken();
     final apiUrl =
         'http://10.0.2.2:8000/users/user-info/'; // Replace with your actual API URL
     try {
@@ -53,7 +56,7 @@ class _GDExtState extends State<GDExt> {
         Uri.parse(apiUrl),
         headers: <String, String>{
           'Authorization':
-              'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzU1OTExMDI3LCJpYXQiOjE3MTk5MTEwMjcsImp0aSI6ImFkYTE2ZGE3NDZkYTQ4M2I4NTJiNGRjODdiYzJlMGIyIiwidXNlcl9pZCI6Mn0.G86CMYcQJyK88CyoVALqGFyfiimaQF7E4e_ltAsQayI',
+              'Bearer $token',
         },
       );
       if (response.statusCode == 200) {

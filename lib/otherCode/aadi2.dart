@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
+import '../models/token_manager.dart';
+
 /*void main() {
   runApp(MyApp());
 }
@@ -71,12 +73,19 @@ class TransportStaffScreen extends StatefulWidget {
 }
 
 class _TransportStaffScreenState extends State<TransportStaffScreen> {
+  var token;
   Future<Staff>? _staffFuture;
 
   @override
   void initState() {
     super.initState();
     _staffFuture = _fetchStaffDetails();
+    TokenManager.getAccessToken().then((value) => <void>{
+      setState(() {
+        token = value;
+      })
+    });
+
   }
 
   Future<Staff> _fetchStaffDetails() async {
@@ -84,7 +93,7 @@ class _TransportStaffScreenState extends State<TransportStaffScreen> {
       Uri.parse('http://10.0.2.2:8000/accomodations/transport_staff'),
       headers: {
         'Authorization':
-            'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzU1OTExMDI3LCJpYXQiOjE3MTk5MTEwMjcsImp0aSI6ImFkYTE2ZGE3NDZkYTQ4M2I4NTJiNGRjODdiYzJlMGIyIiwidXNlcl9pZCI6Mn0.G86CMYcQJyK88CyoVALqGFyfiimaQF7E4e_ltAsQayI',
+            'Bearer $token',
       },
     );
 

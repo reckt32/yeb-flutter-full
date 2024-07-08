@@ -1,6 +1,8 @@
+import 'package:cog_proh/Tanay/U5.dart';
 import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'models/token_manager.dart';
 import 'test1.dart';
 import 'test2.dart';
 
@@ -21,10 +23,11 @@ class _A2state extends State<A2>{
   }
 
   Future<void> fetchUserData() async {
+    final token= await TokenManager.getAccessToken();
     final apiUrl = 'http://10.0.2.2:8000/users/user-info/'; // Replace with your actual API URL
     try {
       final response = await http.get(Uri.parse(apiUrl),headers: <String, String>{
-        'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzU1OTExMDI3LCJpYXQiOjE3MTk5MTEwMjcsImp0aSI6ImFkYTE2ZGE3NDZkYTQ4M2I4NTJiNGRjODdiYzJlMGIyIiwidXNlcl9pZCI6Mn0.G86CMYcQJyK88CyoVALqGFyfiimaQF7E4e_ltAsQayI',
+        'Authorization': 'Bearer $token',
       },
       );
       if (response.statusCode == 200) {
@@ -122,7 +125,7 @@ class _A2state extends State<A2>{
               onPressed: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => ScreenOne()),
+                  MaterialPageRoute(builder: (context) => U5()),
                 );
               },
               style: ElevatedButton.styleFrom(
@@ -132,8 +135,9 @@ class _A2state extends State<A2>{
                 padding:
                 const EdgeInsets.symmetric(horizontal: 50, vertical: 15),
               ),
-              child: const Text('Proceed to payment', style: TextStyle(fontSize: 12,color: Colors.white)),
-            ),
+
+                  child: Text('Proceed to payment', style: TextStyle(fontSize: 12,color: Colors.white))),
+
 
             /* Expanded(
               child: Container(

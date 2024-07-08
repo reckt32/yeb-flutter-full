@@ -1,11 +1,14 @@
 import 'dart:io';
-
-import 'package:cog_proh/announcements_screen/widgets.dart';
+import 'package:cog_proh/announcements_screen/announcements_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:image_picker/image_picker.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:http_parser/http_parser.dart';
+
+import '../announcements_screen/widgets.dart';
+import '../models/token_manager.dart'; // Add this import for mime type
 
 class MyHomePage extends StatefulWidget {
   @override
@@ -20,7 +23,8 @@ class _MyHomePageState extends State<MyHomePage> {
   String userStatus = '';
   bool isError = false;
   bool isLoading = true;
-  // bool _isdatasubmit = false;
+  File? _selectedImage;
+  File? _pdf;
 
   late List<Widget> _pages;
   late Map<String, dynamic> _formData;
@@ -33,10 +37,14 @@ class _MyHomePageState extends State<MyHomePage> {
       GeneralPage(
         formData: _formData,
         moveToNextSection: () => _onItemTapped(1),
+        pickImage: _pickImage,
+        selectedImage: _selectedImage,
       ),
       AchievementsPage(
         formData: _formData,
         moveToNextSection: () => _onItemTapped(2),
+        pickPDF: _pickPDF,
+        pdf: _pdf,
       ),
       ScoresPage(
         formData: _formData,
@@ -56,57 +64,89 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
+  Future<void> _pickImage() async {
+    final pickedFile =
+    await ImagePicker().pickImage(source: ImageSource.gallery);
+    if (pickedFile != null) {
+      setState(() {
+        _selectedImage = File(pickedFile.path);
+        _formData['photo'] = pickedFile.path; // Update formData
+      });
+    }
+  }
+
+  Future<void> _pickPDF() async {
+    FilePickerResult? result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['pdf'],
+    );
+
+    if (result != null) {
+      setState(() {
+        _pdf = File(result.files.single.path!);
+        _formData['proof'] = result.files.single.path; // Update formData
+      });
+    }
+  }
+
   Future<void> _submitForm() async {
+    final token= await TokenManager.getAccessToken();
     try {
       var url = Uri.parse('http://10.0.2.2:8000/users/complete_profile/');
-      var token =
-          'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzU1OTExMDI3LCJpYXQiOjE3MTk5MTEwMjcsImp0aSI6ImFkYTE2ZGE3NDZkYTQ4M2I4NTJiNGRjODdiYzJlMGIyIiwidXNlcl9pZCI6Mn0.G86CMYcQJyK88CyoVALqGFyfiimaQF7E4e_ltAsQayI';
 
-      var body = jsonEncode({
-        "gender": "Male",
-        "grade": _formData['grade'] ?? '',
-        "school": _formData['schoolName'] ?? '',
-        "class_8_score": _formData['class_8_score'] ?? '',
-        "class_9_score": _formData['class_9_score'] ?? '',
-        "class_10_score": _formData['class_10_score'] ?? '',
-        "class_11_score": _formData['class_11_score'] ?? '',
-        "achievement1": _formData['achievement1'] ?? '',
-        "achievement2": _formData['achievement2'] ?? '',
-        "achievement3": _formData['achievement3'] ?? '',
-        "reason": "hjdhsd",
-        "inspiring_startup_name": _formData['startupName'] ?? '',
-        "challenges_ahead": _formData['challengesAhead'] ?? '',
-        "oppurtunities_ahead": _formData['opportunitiesAhead'] ?? '',
-        "tshirt_colour": "red",
-      });
+      var request = http.MultipartRequest('POST', url);
+      request.headers['Authorization'] = 'Bearer $token';
 
-      var response = await http.post(
-        url,
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-        },
-        body: body,
-      );
+      // Add form fields
+      request.fields['gender'] = _formData['gender'] ?? '';
+      request.fields['grade'] = _formData['grade'] ?? '';
+      request.fields['school'] = _formData['schoolName'] ?? '';
+      request.fields['class_8_score'] = _formData['class_8_score'] ?? '';
+      request.fields['class_9_score'] = _formData['class_9_score'] ?? '';
+      request.fields['class_10_score'] = _formData['class_10_score'] ?? '';
+      request.fields['class_11_score'] = _formData['class_11_score'] ?? '';
+      request.fields['achievement1'] = _formData['achievement1'] ?? '';
+      request.fields['achievement2'] = _formData['achievement2'] ?? '';
+      request.fields['achievement3'] = _formData['achievement3'] ?? '';
+      request.fields['reason'] = 'hjdhsd';
+      request.fields['inspiring_startup_name'] = _formData['startupName'] ?? '';
+      request.fields['challenges_ahead'] = _formData['challengesAhead'] ?? '';
+      request.fields['oppurtunities_ahead'] =
+          _formData['opportunitiesAhead'] ?? '';
+      request.fields['tshirt_colour'] = 'red';
 
-      print('Request body: $body');
-      print('Response body: ${response.body}');
+      // Add image file
+      if (_selectedImage != null) {
+        request.files.add(await http.MultipartFile.fromPath(
+          'profile_pic', // Field name in the API
+          _selectedImage!.path,
+          contentType:
+          MediaType('image', 'jpeg'), // Adjust mime type if necessary
+        ));
+      }
+
+      // Add PDF file
+      if (_pdf != null) {
+        request.files.add(await http.MultipartFile.fromPath(
+          'file', // Field name in the API
+          _pdf!.path,
+          contentType: MediaType('application', 'pdf'),
+        ));
+      }
+
+      var response = await request.send();
 
       if (response.statusCode == 201) {
-        print('Data submitted successfully: ${response.body}');
+        print('Data submitted successfully');
         setState(() {
-          _isFormSubmitted = true; // Set form submitted flag to true
+          _isFormSubmitted = true;
         });
         _onItemTapped(_selectedIndex + 1);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Data submitted successfully')),
         );
-        // setState () {
-        //     _isdatasubmit = true;
-        //   }
       } else {
-        print(
-            'Failed to submit data. Error ${response.statusCode}: ${response.reasonPhrase}');
+        print('Failed to submit data. Error ${response.statusCode}');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
               content: Text('Failed to submit data. Please try again later.')),
@@ -122,9 +162,8 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   Future<void> fetchUserData() async {
+    final token= await TokenManager.getAccessToken();
     final apiUrl = 'http://10.0.2.2:8000/users/user-info/';
-    final token =
-        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzU1OTExMDI3LCJpYXQiOjE3MTk5MTEwMjcsImp0aSI6ImFkYTE2ZGE3NDZkYTQ4M2I4NTJiNGRjODdiYzJlMGIyIiwidXNlcl9pZCI6Mn0.G86CMYcQJyK88CyoVALqGFyfiimaQF7E4e_ltAsQayI'; // Replace with your actual token
 
     try {
       final response = await http.get(
@@ -149,12 +188,13 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   Future<void> fetchUserStatus() async {
+    final token= await TokenManager.getAccessToken();
     final response = await http.get(
       Uri.parse('http://10.0.2.2:8000/users/user_status'),
       headers: {
         'Content-Type': 'application/json',
         'Authorization':
-            'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzU1OTExMDI3LCJpYXQiOjE3MTk5MTEwMjcsImp0aSI6ImFkYTE2ZGE3NDZkYTQ4M2I4NTJiNGRjODdiYzJlMGIyIiwidXNlcl9pZCI6Mn0.G86CMYcQJyK88CyoVALqGFyfiimaQF7E4e_ltAsQayI',
+        'Bearer $token',
       },
     );
 
@@ -175,7 +215,7 @@ class _MyHomePageState extends State<MyHomePage> {
       onPressed: () => _onItemTapped(index),
       style: TextButton.styleFrom(
         backgroundColor:
-            isSelected ? Color.fromARGB(255, 1, 0, 94) : Colors.transparent,
+        isSelected ? Color.fromARGB(255, 1, 0, 94) : Colors.transparent,
         side: BorderSide(color: const Color.fromARGB(255, 1, 0, 94)),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(7),
@@ -195,7 +235,6 @@ class _MyHomePageState extends State<MyHomePage> {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        automaticallyImplyLeading: false,
         toolbarHeight: 130,
         backgroundColor: Color.fromARGB(255, 1, 0, 94),
         elevation: 0,
@@ -206,29 +245,56 @@ class _MyHomePageState extends State<MyHomePage> {
           ),
         ),
         title: Row(
-           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             CircleAvatar(
-              radius: 20,
+              radius: 30,
               backgroundColor: Colors.grey.shade300,
             ),
-            Text(
-              username,
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
+            SizedBox(width: 10),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(
+                  username,
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+              ],
+            ),
+            Spacer(), // Spacer to push the logo to the right
+            Padding(
+              padding: const EdgeInsets.only(
+                  right: 16.0), // Adjust padding as needed
+              child: Image.asset(
+                'assets/icons/logo.webp',
+                width: 100, // Adjust the width as needed
+                height: 100, // Adjust the height as needed
               ),
-            ), // Spacer to push the logo to the right
-            Image.asset(
-              'assets/icons/logo.webp',
-              width: 100, // Adjust the width as needed
-              height: 100, // Adjust the height as needed
             ),
           ],
         ),
       ),
-      body: Column(
+      body:
+      // isLoading
+      //     ? Center(child: CircularProgressIndicator())
+      //     : userStatus == 'profile_completed'
+      //         ? Center(
+      //             child: Text(
+      //               'Profile Submitted!',
+      //               style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+      //             ),
+      //           ),
+      //         : Center(
+      //             child: Text(
+      //               'Already applied',
+      //               style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+      //             ),
+      //           ),
+
+      Column(
         children: <Widget>[
           Container(
             padding: EdgeInsets.symmetric(vertical: 10),
@@ -246,28 +312,28 @@ class _MyHomePageState extends State<MyHomePage> {
                 SizedBox(height: 20), // Adjust spacing as needed
                 _isFormSubmitted
                     ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.check_circle,
-                                color: Colors.green, size: 98),
-                            SizedBox(height: 15),
-                            Padding(
-                              padding:
-                                  const EdgeInsets.symmetric(vertical: 20.0),
-                              child: Text(
-                                'Profile Completed',
-                                style: TextStyle(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                          ],
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.check_circle,
+                          color: Colors.green, size: 98),
+                      SizedBox(height: 15),
+                      Padding(
+                        padding:
+                        const EdgeInsets.symmetric(vertical: 20.0),
+                        child: Text(
+                          'Profile Completed',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
-                      )
+                      ),
+                    ],
+                  ),
+                )
                     : SizedBox
-                        .shrink(), // Use SizedBox.shrink() to conditionally hide the widget
+                    .shrink(), // Use SizedBox.shrink() to conditionally hide the widget
               ],
             ),
           ),
@@ -309,7 +375,6 @@ class _MyHomePageState extends State<MyHomePage> {
             case 2:
               break;
           }
-          // Handle bottom navigation bar tap if needed
         },
       ),
     );
@@ -321,8 +386,14 @@ class _MyHomePageState extends State<MyHomePage> {
 class GeneralPage extends StatefulWidget {
   final Map<String, dynamic> formData;
   final VoidCallback moveToNextSection;
+  final Future<void> Function() pickImage;
+  final File? selectedImage;
 
-  GeneralPage({required this.formData, required this.moveToNextSection});
+  GeneralPage(
+      {required this.formData,
+        required this.moveToNextSection,
+        required this.pickImage,
+        required this.selectedImage});
 
   @override
   _GeneralPageState createState() => _GeneralPageState();
@@ -330,21 +401,10 @@ class GeneralPage extends StatefulWidget {
 
 class _GeneralPageState extends State<GeneralPage> {
   String? _selectedGender;
-  File? _selectedImage;
 
   TextEditingController _schoolAddressController = TextEditingController();
   TextEditingController _schoolNameController = TextEditingController();
   TextEditingController _gradeController = TextEditingController();
-
-  Future<void> _pickImage() async {
-    final pickedFile =
-        await ImagePicker().pickImage(source: ImageSource.gallery);
-    if (pickedFile != null) {
-      setState(() {
-        _selectedImage = File(pickedFile.path);
-      });
-    }
-  }
 
   @override
   void dispose() {
@@ -376,7 +436,7 @@ class _GeneralPageState extends State<GeneralPage> {
                       'Male',
                       style: TextStyle(fontSize: 10.0),
                     ),
-                    value: 'male',
+                    value: 'Male',
                     groupValue: _selectedGender,
                     onChanged: (String? value) {
                       setState(() {
@@ -399,7 +459,7 @@ class _GeneralPageState extends State<GeneralPage> {
                       'Female',
                       style: TextStyle(fontSize: 10.0),
                     ),
-                    value: 'female',
+                    value: 'Female',
                     groupValue: _selectedGender,
                     onChanged: (String? value) {
                       setState(() {
@@ -423,7 +483,7 @@ class _GeneralPageState extends State<GeneralPage> {
             prefixIcon: Icon(Icons.grade),
           ),
           onChanged: (value) =>
-              widget.formData['grade'] = value, // Update formData
+          widget.formData['grade'] = value, // Update formData
         ),
         SizedBox(height: 10),
         TextField(
@@ -435,7 +495,7 @@ class _GeneralPageState extends State<GeneralPage> {
             prefixIcon: Icon(Icons.school),
           ),
           onChanged: (value) =>
-              widget.formData['schoolName'] = value, // Update formData
+          widget.formData['schoolName'] = value, // Update formData
         ),
         SizedBox(height: 10),
         TextField(
@@ -447,22 +507,19 @@ class _GeneralPageState extends State<GeneralPage> {
             prefixIcon: Icon(Icons.location_on),
           ),
           onChanged: (value) =>
-              widget.formData['schoolAddress'] = value, // Update formData
+          widget.formData['schoolAddress'] = value, // Update formData
         ),
-
-// img uploader
         SizedBox(height: 10),
         ListTile(
           leading: Icon(Icons.photo_camera),
           title: Text('Upload passport size photo'),
-          onTap: _pickImage,
+          onTap: widget.pickImage,
         ),
-        if (_selectedImage != null)
+        if (widget.selectedImage != null)
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 10.0),
-            child: Image.file(_selectedImage!),
+            child: Image.file(widget.selectedImage!),
           ),
-
         SizedBox(height: 20),
         ElevatedButton(
           onPressed: () {
@@ -472,7 +529,7 @@ class _GeneralPageState extends State<GeneralPage> {
             backgroundColor: MaterialStateProperty.all(
                 Color.fromARGB(255, 1, 0, 94)), // Background color
             foregroundColor:
-                MaterialStateProperty.all(Colors.white), // Text color
+            MaterialStateProperty.all(Colors.white), // Text color
           ),
           child: Text(
             'Next',
@@ -489,8 +546,14 @@ class _GeneralPageState extends State<GeneralPage> {
 class AchievementsPage extends StatefulWidget {
   final Map<String, dynamic> formData;
   final VoidCallback moveToNextSection;
+  final Future<void> Function() pickPDF;
+  final File? pdf;
 
-  AchievementsPage({required this.formData, required this.moveToNextSection});
+  AchievementsPage(
+      {required this.formData,
+        required this.moveToNextSection,
+        required this.pickPDF,
+        required this.pdf});
 
   @override
   _AchievementsPageState createState() => _AchievementsPageState();
@@ -500,20 +563,6 @@ class _AchievementsPageState extends State<AchievementsPage> {
   TextEditingController _achievement1Controller = TextEditingController();
   TextEditingController _achievement2Controller = TextEditingController();
   TextEditingController _achievement3Controller = TextEditingController();
-  File? _pdf;
-
-  Future<void> _pickPDF() async {
-    FilePickerResult? result = await FilePicker.platform.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: ['pdf'],
-    );
-
-    if (result != null) {
-      setState(() {
-        _pdf = File(result.files.single.path!);
-      });
-    }
-  }
 
   @override
   void dispose() {
@@ -537,7 +586,7 @@ class _AchievementsPageState extends State<AchievementsPage> {
             prefixIcon: Icon(Icons.star),
           ),
           onChanged: (value) =>
-              widget.formData['achievement1'] = value, // Update formData
+          widget.formData['achievement1'] = value, // Update formData
         ),
         SizedBox(height: 10),
         TextField(
@@ -549,7 +598,7 @@ class _AchievementsPageState extends State<AchievementsPage> {
             prefixIcon: Icon(Icons.star),
           ),
           onChanged: (value) =>
-              widget.formData['achievement2'] = value, // Update formData
+          widget.formData['achievement2'] = value, // Update formData
         ),
         SizedBox(height: 10),
         TextField(
@@ -561,24 +610,21 @@ class _AchievementsPageState extends State<AchievementsPage> {
             prefixIcon: Icon(Icons.star),
           ),
           onChanged: (value) =>
-              widget.formData['achievement3'] = value, // Update formData
+          widget.formData['achievement3'] = value, // Update formData
         ),
-
-// pdf uploader
         SizedBox(height: 10),
         ListTile(
           leading: Icon(Icons.attachment),
           title: Text('Attach proof if any. Only in PDF format'),
           trailing: IconButton(
             icon: Icon(Icons.upload_file),
-            onPressed: _pickPDF,
+            onPressed: widget.pickPDF,
           ),
         ),
-        if (_pdf != null) ...[
+        if (widget.pdf != null) ...[
           SizedBox(height: 10),
-          Text('PDF Selected: ${_pdf!.path.split('/').last}'),
+          Text('PDF Selected: ${widget.pdf!.path.split('/').last}'),
         ],
-
         SizedBox(height: 20),
         ElevatedButton(
           onPressed: () {
@@ -588,7 +634,7 @@ class _AchievementsPageState extends State<AchievementsPage> {
             backgroundColor: MaterialStateProperty.all(
                 Color.fromARGB(255, 1, 0, 94)), // Background color
             foregroundColor:
-                MaterialStateProperty.all(Colors.white), // Text color
+            MaterialStateProperty.all(Colors.white), // Text color
           ),
           child: Text(
             'Next',
@@ -641,7 +687,7 @@ class _ScoresPageState extends State<ScoresPage> {
             prefixIcon: Icon(Icons.score),
           ),
           onChanged: (value) =>
-              widget.formData['class_8_score'] = value, // Update formData
+          widget.formData['class_8_score'] = value, // Update formData
         ),
         SizedBox(height: 10),
         TextField(
@@ -653,7 +699,7 @@ class _ScoresPageState extends State<ScoresPage> {
             prefixIcon: Icon(Icons.score),
           ),
           onChanged: (value) =>
-              widget.formData['class_9_score'] = value, // Update formData
+          widget.formData['class_9_score'] = value, // Update formData
         ),
         SizedBox(height: 10),
         TextField(
@@ -665,7 +711,7 @@ class _ScoresPageState extends State<ScoresPage> {
             prefixIcon: Icon(Icons.score),
           ),
           onChanged: (value) =>
-              widget.formData['class_10_score'] = value, // Update formData
+          widget.formData['class_10_score'] = value, // Update formData
         ),
         SizedBox(height: 10),
         TextField(
@@ -677,7 +723,7 @@ class _ScoresPageState extends State<ScoresPage> {
             prefixIcon: Icon(Icons.score),
           ),
           onChanged: (value) =>
-              widget.formData['class_11_score'] = value, // Update formData
+          widget.formData['class_11_score'] = value, // Update formData
         ),
         SizedBox(height: 20),
         ElevatedButton(
@@ -688,7 +734,7 @@ class _ScoresPageState extends State<ScoresPage> {
             backgroundColor: MaterialStateProperty.all(
                 Color.fromARGB(255, 1, 0, 94)), // Background color
             foregroundColor:
-                MaterialStateProperty.all(Colors.white), // Text color
+            MaterialStateProperty.all(Colors.white), // Text color
           ),
           child: Text(
             'Next',
@@ -739,7 +785,7 @@ class _MiscellaneousPageState extends State<MiscellaneousPage> {
             prefixIcon: Icon(Icons.business),
           ),
           onChanged: (value) =>
-              widget.formData['startupName'] = value, // Update formData
+          widget.formData['startupName'] = value, // Update formData
         ),
         SizedBox(height: 10),
         TextField(
@@ -751,7 +797,7 @@ class _MiscellaneousPageState extends State<MiscellaneousPage> {
             prefixIcon: Icon(Icons.warning),
           ),
           onChanged: (value) =>
-              widget.formData['challengesAhead'] = value, // Update formData
+          widget.formData['challengesAhead'] = value, // Update formData
         ),
         SizedBox(height: 10),
         TextField(
@@ -763,7 +809,7 @@ class _MiscellaneousPageState extends State<MiscellaneousPage> {
             prefixIcon: Icon(Icons.lightbulb_outline),
           ),
           onChanged: (value) =>
-              widget.formData['opportunitiesAhead'] = value, // Update formData
+          widget.formData['opportunitiesAhead'] = value, // Update formData
         ),
         SizedBox(height: 20),
         ElevatedButton(
@@ -774,7 +820,7 @@ class _MiscellaneousPageState extends State<MiscellaneousPage> {
             backgroundColor: MaterialStateProperty.all(
                 Color.fromARGB(255, 1, 0, 94)), // Background color
             foregroundColor:
-                MaterialStateProperty.all(Colors.white), // Text color
+            MaterialStateProperty.all(Colors.white), // Text color
           ),
           child: Text(
             'Submit',

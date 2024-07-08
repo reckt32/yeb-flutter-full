@@ -7,6 +7,7 @@ import 'dart:convert';
 import 'announcements_screen/widgets.dart';
 import 'models/gd_details.dart';
 import 'announcements_screen/announcements_screen.dart';
+import 'models/token_manager.dart';
 
 Color primaryColor = const Color.fromRGBO(1, 0, 91, 1);
 
@@ -37,6 +38,7 @@ class _GDScreenState extends State<GDscreen> {
   }
 
   Future<void> fetchUserData() async {
+    final token= await TokenManager.getAccessToken();
     final apiUrl =
         'http://10.0.2.2:8000/users/user-info/'; // Replace with your actual API URL
     try {
@@ -44,7 +46,7 @@ class _GDScreenState extends State<GDscreen> {
         Uri.parse(apiUrl),
         headers: <String, String>{
           'Authorization':
-              'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzU1OTExMDI3LCJpYXQiOjE3MTk5MTEwMjcsImp0aSI6ImFkYTE2ZGE3NDZkYTQ4M2I4NTJiNGRjODdiYzJlMGIyIiwidXNlcl9pZCI6Mn0.G86CMYcQJyK88CyoVALqGFyfiimaQF7E4e_ltAsQayI',
+              'Bearer $token',
         },
       );
       if (response.statusCode == 200) {

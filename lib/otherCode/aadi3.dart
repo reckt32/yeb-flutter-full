@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+
+import '../models/token_manager.dart';
 /*
 void main() {
   runApp(MyApp());
@@ -25,6 +27,7 @@ class _AirportSelectionScreenState extends State<AirportSelectionScreen> {
   String? _selectedType;
   List<Map<String, dynamic>> _airports = [];
   bool _isLoading = true;
+  var token;
 
   final List<String> _types = ['pickup', 'drop'];
 
@@ -32,13 +35,18 @@ class _AirportSelectionScreenState extends State<AirportSelectionScreen> {
   void initState() {
     super.initState();
     _fetchAirports();
+    TokenManager.getAccessToken().then((value) => <void>{
+      setState(() {
+        token = value;
+      })
+    });
   }
 
   Future<void> _fetchAirports() async {
     final url = 'http://10.0.2.2:8000/accomodations/airport_list';
     final headers = {
       'Authorization':
-          'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzU1OTExMDI3LCJpYXQiOjE3MTk5MTEwMjcsImp0aSI6ImFkYTE2ZGE3NDZkYTQ4M2I4NTJiNGRjODdiYzJlMGIyIiwidXNlcl9pZCI6Mn0.G86CMYcQJyK88CyoVALqGFyfiimaQF7E4e_ltAsQayI',
+          'Bearer $token',
     };
 
     try {

@@ -4,8 +4,11 @@ import 'package:http/http.dart' as http;
 import 'package:cog_proh/models/gd_details.dart';
 import 'package:cog_proh/models/gd_request.dart';
 
+import '../models/token_manager.dart';
+
 class Request {
   Future<Gd_details> fetchGDDetails() async {
+    final token= await TokenManager.getAccessToken();
     final apiUrl =
         'http://10.0.2.2:8000/events/gd_details'; // Replace with your actual API URL
     try {
@@ -14,7 +17,7 @@ class Request {
         headers: <String, String>{
           'Content-Type': 'application/json',
           'Authorization':
-              'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzU1OTExMDI3LCJpYXQiOjE3MTk5MTEwMjcsImp0aSI6ImFkYTE2ZGE3NDZkYTQ4M2I4NTJiNGRjODdiYzJlMGIyIiwidXNlcl9pZCI6Mn0.G86CMYcQJyK88CyoVALqGFyfiimaQF7E4e_ltAsQayI',
+              'Bearer $token',
         },
       );
       if (response.statusCode == 200) {
@@ -31,6 +34,7 @@ class Request {
   }
 
   Future<void> fetchUserData() async {
+    final token= await TokenManager.getAccessToken();
     final apiUrl =
         'http://10.0.2.2:8000/users/user-info/'; // Replace with your actual API URL
     try {
@@ -38,7 +42,7 @@ class Request {
         Uri.parse(apiUrl),
         headers: <String, String>{
           'Authorization':
-              'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzU1OTExMDI3LCJpYXQiOjE3MTk5MTEwMjcsImp0aSI6ImFkYTE2ZGE3NDZkYTQ4M2I4NTJiNGRjODdiYzJlMGIyIiwidXNlcl9pZCI6Mn0.G86CMYcQJyK88CyoVALqGFyfiimaQF7E4e_ltAsQayI',
+              'Bearer $token',
         },
       );
       if (response.statusCode == 200) {

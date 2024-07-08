@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
+import '../models/token_manager.dart';
+
 /*void main() {
   runApp(TShirtApp());
 }
@@ -25,6 +27,18 @@ class TShirtScreen extends StatefulWidget {
 }
 
 class _TShirtScreenState extends State<TShirtScreen> {
+  var token;
+
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    TokenManager.getAccessToken().then((value) => <void>{
+      setState(() {
+        token = value;
+      })
+    });
+  }
   String _selectedSize = 'M';
   String _selectedColor = 'Red';
 
@@ -38,7 +52,7 @@ class _TShirtScreenState extends State<TShirtScreen> {
         headers: <String, String>{
           'Content-Type': 'application/json',
           'Authorization':
-              'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzU1OTExMDI3LCJpYXQiOjE3MTk5MTEwMjcsImp0aSI6ImFkYTE2ZGE3NDZkYTQ4M2I4NTJiNGRjODdiYzJlMGIyIiwidXNlcl9pZCI6Mn0.G86CMYcQJyK88CyoVALqGFyfiimaQF7E4e_ltAsQayI', // Replace with actual token
+              'Bearer $token', // Replace with actual token
         },
         body: jsonEncode(<String, String>{
           'size': _selectedSize,

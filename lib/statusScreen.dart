@@ -6,6 +6,7 @@ import 'a3.dart'; // Import your A3 screen
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'gd_screen.dart';
+import 'models/token_manager.dart';
 
 
 class StatusBasedScreen extends StatefulWidget {
@@ -22,12 +23,13 @@ class _StatusBasedScreenState extends State<StatusBasedScreen> {
     _userStatusFuture = getUserStatus();
   }
   Future<String> getUserStatus() async {
-    final apiUrl = 'http://10.0.2.2:8000/users/user_status/'; // Replace with your actual API URL
+    final token= await TokenManager.getAccessToken();
+    final apiUrl = 'http://10.0.2.2:8000/users/user_status/';
     try {
       final response = await http.get(
         Uri.parse(apiUrl),
         headers: <String, String>{
-          'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzU1OTExMDI3LCJpYXQiOjE3MTk5MTEwMjcsImp0aSI6ImFkYTE2ZGE3NDZkYTQ4M2I4NTJiNGRjODdiYzJlMGIyIiwidXNlcl9pZCI6Mn0.G86CMYcQJyK88CyoVALqGFyfiimaQF7E4e_ltAsQayI', // Replace with actual token
+          'Authorization': 'Bearer $token',
         },
       );
       if (response.statusCode == 200) {

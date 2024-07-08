@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:cog_proh/announcements_screen/widgets.dart';
 
+import '../models/token_manager.dart';
+
 class Mymore extends StatefulWidget {
   const Mymore({Key? key}) : super(key: key);
 
@@ -27,10 +29,11 @@ class _MymoreState extends State<Mymore> {
   }
 
   final String apiUrl = 'http://10.0.2.2:8000/events/event_list/';
-  final String token =
-      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzU1OTExMDI3LCJpYXQiOjE3MTk5MTEwMjcsImp0aSI6ImFkYTE2ZGE3NDZkYTQ4M2I4NTJiNGRjODdiYzJlMGIyIiwidXNlcl9pZCI6Mn0.G86CMYcQJyK88CyoVALqGFyfiimaQF7E4e_ltAsQayI'; // Replace with your actual token
+  // final String token =
+  //     'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzU1OTExMDI3LCJpYXQiOjE3MTk5MTEwMjcsImp0aSI6ImFkYTE2ZGE3NDZkYTQ4M2I4NTJiNGRjODdiYzJlMGIyIiwidXNlcl9pZCI6Mn0.G86CMYcQJyK88CyoVALqGFyfiimaQF7E4e_ltAsQayI'; // Replace with your actual token
 
   Future<void> fetchUserStatus() async {
+    final token= await TokenManager.getAccessToken();
     final response = await http.get(
       Uri.parse('http://10.0.2.2:8000/users/user_status'),
       headers: {
@@ -51,6 +54,7 @@ class _MymoreState extends State<Mymore> {
   }
 
   Future<List<dynamic>> fetchEvents() async {
+    final token= await TokenManager.getAccessToken();
     final response = await http.get(
       Uri.parse(apiUrl),
       headers: {
@@ -70,15 +74,15 @@ class _MymoreState extends State<Mymore> {
     if (_selectedEvent != null && _eventname != null) {
       // Ensure _eventname is also not null
       final url = Uri.parse('http://10.0.2.2:8000/users/has_applied/');
-      final String _token =
-          'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzU1OTExMDI3LCJpYXQiOjE3MTk5MTEwMjcsImp0aSI6ImFkYTE2ZGE3NDZkYTQ4M2I4NTJiNGRjODdiYzJlMGIyIiwidXNlcl9pZCI6Mn0.G86CMYcQJyK88CyoVALqGFyfiimaQF7E4e_ltAsQayI'; // Replace with your actual token
-
+    //  final String _token =
+      //    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzU1OTExMDI3LCJpYXQiOjE3MTk5MTEwMjcsImp0aSI6ImFkYTE2ZGE3NDZkYTQ4M2I4NTJiNGRjODdiYzJlMGIyIiwidXNlcl9pZCI6Mn0.G86CMYcQJyK88CyoVALqGFyfiimaQF7E4e_ltAsQayI'; // Replace with your actual token
+      final token= await TokenManager.getAccessToken();
       try {
         final response = await http.post(
           url,
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': 'Bearer $_token',
+            'Authorization': 'Bearer $token',
           },
           body: jsonEncode({
             'static_id': _selectedEvent!,
@@ -112,9 +116,9 @@ class _MymoreState extends State<Mymore> {
 
   Future<void> fetchUserData() async {
     final apiUrl = 'http://10.0.2.2:8000/users/user-info/';
-    final token =
-        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzU1OTExMDI3LCJpYXQiOjE3MTk5MTEwMjcsImp0aSI6ImFkYTE2ZGE3NDZkYTQ4M2I4NTJiNGRjODdiYzJlMGIyIiwidXNlcl9pZCI6Mn0.G86CMYcQJyK88CyoVALqGFyfiimaQF7E4e_ltAsQayI'; // Replace with your actual token
-
+    // final token =
+    //     'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzU1OTExMDI3LCJpYXQiOjE3MTk5MTEwMjcsImp0aSI6ImFkYTE2ZGE3NDZkYTQ4M2I4NTJiNGRjODdiYzJlMGIyIiwidXNlcl9pZCI6Mn0.G86CMYcQJyK88CyoVALqGFyfiimaQF7E4e_ltAsQayI'; // Replace with your actual to
+    final token= await TokenManager.getAccessToken();
     try {
       final response = await http.get(
         Uri.parse(apiUrl),
